@@ -1,1 +1,2 @@
-# gkvDB - Go Key-Value Store DB
+# **gkvDB**
+Transactional key-value store DB implemented in Go
