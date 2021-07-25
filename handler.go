@@ -85,6 +85,7 @@ func NewDB(args []string) {
 		dbName = args[2]
 	}
 
+	db.DB.Close() // close initial temporary connection
 	db = newDBConnection(dbName)
 }
 
@@ -106,5 +107,6 @@ func UseDB(args []string) {
 
 	dbName = args[1]
 
+	db.DB.Close() // close initial temporary connection
 	db = newDBConnection(dbName)
 }
