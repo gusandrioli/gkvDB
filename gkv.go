@@ -1,12 +1,20 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
 
-var GlobalStore = make(map[string]string)
+	"github.com/pkg/errors"
+)
+
+var (
+	transactionStack = &TransactionStack{}
+)
 
 type Transaction struct {
 	localStore map[string]string
-	next       *Transaction // linked list so it points to the next Transaction
+	next       *Transaction
 }
 
 type TransactionStack struct {
@@ -18,12 +26,14 @@ func (ts *TransactionStack) Commit() {
 	activeTransaction := ts.GetTopTransaction()
 
 	if activeTransaction == nil {
-		fmt.Printf("WARNING: Nothing to commit")
+		fmt.Printf(MsgWarning + "Nothing to commit")
 		return
 	}
 
 	for k, v := range activeTransaction.localStore {
-		GlobalStore[k] = v
+		if err := db.DB.Put([]byte(k), []byte(v), nil); err != nil {
+			fmt.Printf(MsgError + err.Error() + "\n")
+		}
 
 		if activeTransaction.next != nil {
 			activeTransaction.next.localStore[k] = v
@@ -31,11 +41,29 @@ func (ts *TransactionStack) Commit() {
 	}
 }
 
-func Count() {
-	fmt.Printf("%d\n", len(GlobalStore))
+func CountRecords() {
+	var i int64
+	iter := db.DB.NewIterator(nil, nil)
+	for iter.Next() {
+		i++
+	}
+	iter.Release()
+
+	fmt.Printf("%d record(s) were found\n", i)
 }
 
-func Delete(key string, ts *TransactionStack) {
+func CountDatabases() error {
+	dbs, err := ioutil.ReadDir("./tmp/")
+	if err != nil {
+		return errors.Wrap(err, "ioutil.ReadDir")
+	}
+
+	fmt.Printf("%d Databases found\n", len(dbs))
+
+	return nil
+}
+
+func (ts *TransactionStack) DeleteRecord(key string) {
 	activeTransaction := ts.GetTopTransaction()
 
 	if activeTransaction != nil {
@@ -45,10 +73,21 @@ func Delete(key string, ts *TransactionStack) {
 		}
 	}
 
-	delete(GlobalStore, key)
+	if err := db.DB.Delete([]byte(key), nil); err != nil {
+		fmt.Printf(MsgError + err.Error() + "\n")
+	}
 }
 
-func Get(key string, ts *TransactionStack) {
+func DeleteDatabase(args []string) {
+	if len(args) <= 2 {
+		fmt.Printf(MsgError + "Missing database name for DELETE\n")
+		return
+	}
+
+	os.RemoveAll("./.tmp/" + args[2] + ".db")
+}
+
+func (ts *TransactionStack) Get(key string) {
 	activeTransaction := ts.GetTopTransaction()
 
 	if activeTransaction != nil {
@@ -58,42 +97,67 @@ func Get(key string, ts *TransactionStack) {
 		}
 	}
 
-	if v, ok := GlobalStore[key]; ok {
-		fmt.Printf("%s\n", v)
+	value, err := db.DB.Get([]byte(key), nil)
+	if err != nil {
+		fmt.Printf(MsgError+"%s not found\n", key)
 		return
 	}
 
-	fmt.Printf("%s not set\n", key)
-	return
+	fmt.Printf("%s\n", string(value))
 }
 
 func (ts *TransactionStack) GetTopTransaction() *Transaction {
 	return ts.topTransaction
 }
 
-func List() {
-	if GlobalStore == nil {
-		return
+func ListDatabases() error {
+	dbs, err := ioutil.ReadDir("./.tmp/")
+	if err != nil {
+		return errors.Wrap(err, "ioutil.ReadDir")
 	}
 
-	for k, v := range GlobalStore {
+	fmt.Printf("%d Databases found: \n", len(dbs))
+
+	for i, v := range dbs {
+		name := []byte(v.Name())
+		fmt.Printf("%d: %s\n", i, string(name[:len(name)-3]))
+	}
+
+	return nil
+}
+
+func ListRecords() {
+	iter := db.DB.NewIterator(nil, nil)
+	for iter.Next() {
+		k := iter.Key()
+		v := iter.Value()
+
 		fmt.Printf("%s: %s\n", k, v)
+	}
+	iter.Release()
+
+	if err := iter.Error(); err != nil {
+		fmt.Printf(MsgError + err.Error() + "\n")
 	}
 }
 
+func NewTransactionStack() *TransactionStack {
+	return &TransactionStack{}
+}
+
 func (ts *TransactionStack) Push() {
-	pushedTransaction := &Transaction{
+	newTransaction := &Transaction{
 		localStore: make(map[string]string),
 	}
 
-	pushedTransaction.next = ts.topTransaction
-	ts.topTransaction = pushedTransaction
+	newTransaction.next = ts.topTransaction
+	ts.topTransaction = newTransaction
 	ts.size++
 }
 
 func (ts *TransactionStack) Pop() {
 	if ts.topTransaction == nil {
-		fmt.Printf("ERROR: No Active Transactions\n")
+		fmt.Printf(MsgError + "No Active Transactions\n")
 		return
 	}
 
@@ -103,7 +167,7 @@ func (ts *TransactionStack) Pop() {
 
 func (ts *TransactionStack) Rollback() {
 	if ts.topTransaction == nil {
-		fmt.Printf("ERROR: No Active Transactions")
+		fmt.Printf(MsgError + "No Active Transactions\n")
 		return
 	}
 
@@ -112,7 +176,7 @@ func (ts *TransactionStack) Rollback() {
 	}
 }
 
-func Set(key string, value string, ts *TransactionStack) {
+func (ts *TransactionStack) Set(key string, value string) {
 	activeTransaction := ts.GetTopTransaction()
 
 	if activeTransaction != nil {
@@ -120,6 +184,7 @@ func Set(key string, value string, ts *TransactionStack) {
 		return
 	}
 
-	GlobalStore[key] = value
-	return
+	if err := db.DB.Put([]byte(key), []byte(value), nil); err != nil {
+		fmt.Printf(MsgError + err.Error() + "\n")
+	}
 }
