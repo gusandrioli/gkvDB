@@ -35,3 +35,7 @@ go build
 | ROLLBACK | Rolls back a transaction                         |                      |
 | SET      | Sets a key to a certain value                    | KEY + VALUE          |
 | USE      | Use a specific database                          | DB_NAME              |
+
+
+## Bugs
+Bugs or suggestions? Open an issue [here](https://github.com/gusandrioli/gkvDB/issues/new).
