@@ -53,7 +53,7 @@ func CountRecords() {
 }
 
 func CountDatabases() error {
-	dbs, err := ioutil.ReadDir("./tmp/")
+	dbs, err := ioutil.ReadDir("./.tmp/")
 	if err != nil {
 		return errors.Wrap(err, "ioutil.ReadDir")
 	}
