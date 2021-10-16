@@ -36,7 +36,7 @@ func suggestWithArguments(args []string) []prompt.Suggest {
 		suggestions := []prompt.Suggest{DatabaseCommand, RecordCommand}
 		return prompt.FilterHasPrefix(suggestions, args[1], true)
 	case "LIST":
-		suggestions := []prompt.Suggest{DatabasesCommand, RecordsCommand}
+		suggestions := []prompt.Suggest{DatabasesCommand, RecordsCommand, TransactionsCommand}
 		return prompt.FilterHasPrefix(suggestions, args[1], true)
 	case "NEW":
 		suggestions := []prompt.Suggest{DatabaseCommand}

@@ -8,6 +8,11 @@ import (
 
 func executor(in string) {
 	args := strings.Fields(in)
+
+	if len(args) == 0 {
+		return
+	}
+
 	switch args[0] {
 	case "BEGIN":
 		Begin(transactionStack, args)
@@ -24,7 +29,7 @@ func executor(in string) {
 	case "GET":
 		Get(transactionStack, args)
 	case "LIST":
-		List(args)
+		List(transactionStack, args)
 	case "NEW":
 		NewDB(args)
 	case "ROLLBACK":

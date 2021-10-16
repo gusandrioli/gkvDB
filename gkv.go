@@ -141,6 +141,34 @@ func ListRecords() {
 	}
 }
 
+func (ts *TransactionStack) ListTransaction() {
+	if ts.topTransaction == nil {
+		fmt.Printf("No changes in transaction\n")
+		return
+	}
+
+	transactionStackChanges := []map[string]string{}
+
+	currentTransaction := ts.topTransaction
+
+	for {
+		transactionStackChanges = append(transactionStackChanges, currentTransaction.localStore)
+		if currentTransaction.next == nil {
+			break
+		}
+
+		currentTransaction = currentTransaction.next
+	}
+
+	for transactionIndex := range transactionStackChanges {
+		invTransactionIndex := len(transactionStackChanges) - 1 - transactionIndex // hacky way to invert count in loop
+
+		for k, v := range transactionStackChanges[transactionIndex] {
+			fmt.Printf("Transaction Nesting Level: %d => %s: %s\n", invTransactionIndex, k, v)
+		}
+	}
+}
+
 func NewTransactionStack() *TransactionStack {
 	return &TransactionStack{}
 }

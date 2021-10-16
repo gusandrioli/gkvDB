@@ -61,7 +61,7 @@ func Get(ts *TransactionStack, args []string) {
 	ts.Get(args[1])
 }
 
-func List(args []string) {
+func List(ts *TransactionStack, args []string) {
 	// TODO add where = matches contain value?
 	if args[1] == "DATABASES" {
 		if err := ListDatabases(); err != nil {
@@ -72,6 +72,11 @@ func List(args []string) {
 
 	if args[1] == "RECORDS" {
 		ListRecords()
+		return
+	}
+
+	if args[1] == "TRANSACTIONS" {
+		ts.ListTransaction()
 		return
 	}
 

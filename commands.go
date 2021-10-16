@@ -3,11 +3,12 @@ package main
 import "github.com/c-bata/go-prompt"
 
 var (
-	DatabasesCommand = prompt.Suggest{Text: "DATABASES", Description: "Find all databases"}
-	DatabaseCommand  = prompt.Suggest{Text: "DATABASE", Description: ""}
-	RecordsCommand   = prompt.Suggest{Text: "RECORDS", Description: "Find all records"}
-	RecordCommand    = prompt.Suggest{Text: "RECORD", Description: ""}
-	DBCommands       = []prompt.Suggest{
+	DatabaseCommand     = prompt.Suggest{Text: "DATABASE", Description: ""}
+	DatabasesCommand    = prompt.Suggest{Text: "DATABASES", Description: "Find all databases"}
+	RecordCommand       = prompt.Suggest{Text: "RECORD", Description: ""}
+	RecordsCommand      = prompt.Suggest{Text: "RECORDS", Description: "Find all records"}
+	TransactionsCommand = prompt.Suggest{Text: "TRANSACTIONS", Description: "Find changes on current transactions"}
+	DBCommands          = []prompt.Suggest{
 		{Text: "NEW", Description: "Creates new database"},
 		{Text: "USE", Description: "Use a specific database"},
 	}
