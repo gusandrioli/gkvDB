@@ -29,13 +29,13 @@ gkvDB
 
 2. Set a value:
 ```sh
-gkvDB >>> SET name joe
+gkvDB >>> SET Name Joe
 ```
 
 3. List all records
 ```sh
 gkvDB >>> LIST RECORDS
-name: joe
+Name: Joe
 ```
 
 ## Usage/Commands
@@ -52,8 +52,7 @@ name: joe
 | NEW      | Creates new database                             | DATABASE + DB_NAME             |
 | ROLLBACK | Rolls back a transaction                         |                                |
 | SET      | Sets a key to a certain value                    | KEY + VALUE                    |
-| USE      | Use a specific database                          | DB_NAME                        |
-
+| USE      | Uses a specific database                         | DB_NAME                        |
 
 ## Bugs
 Bugs or suggestions? Open an issue [here](https://github.com/gusandrioli/gkvDB/issues/new).
