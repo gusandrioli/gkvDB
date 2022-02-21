@@ -1,26 +1,24 @@
-package main
+package db
 
 import (
 	"fmt"
 	"log"
 	"strings"
 
+	"github.com/gusandrioli/gkvDB/utils"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var (
-	db *LevelDB
-)
-
 type LevelDB struct {
-	DB *leveldb.DB
+	Name string
+	DB   *leveldb.DB
 }
 
-func newDBConnection(name string) *LevelDB {
+func NewDBConnection(name string) *LevelDB {
 	var dbName string
 
 	if name == "" {
-		dbName = "tmp-" + newSequenceWithLength(8)
+		dbName = "tmp-" + utils.NewSequenceWithLength(8)
 	} else {
 		dbName = name
 	}
@@ -31,11 +29,12 @@ func newDBConnection(name string) *LevelDB {
 		return nil
 	}
 
-	if !strings.Contains(dbName, "tmp-") {
+	if !strings.Contains(dbName, "tmp-") && !strings.Contains(dbName, "local_expiry") {
 		fmt.Printf("Database initialized: %s\n", dbName)
 	}
 
 	return &LevelDB{
-		DB: db,
+		Name: dbName,
+		DB:   db,
 	}
 }

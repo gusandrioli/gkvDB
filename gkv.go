@@ -5,25 +5,29 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/gusandrioli/gkvDB/db"
 	"github.com/pkg/errors"
 )
 
 var (
-	transactionStack = &TransactionStack{}
+	gkv = &gkvDB{}
 )
+
+// Wraps the entire gkvDB app
+type gkvDB struct {
+	mainDB         *db.LevelDB
+	helperDB       *db.LevelDB
+	topTransaction *Transaction
+	size           int
+}
 
 type Transaction struct {
 	localStore map[string]string
 	next       *Transaction
 }
 
-type TransactionStack struct {
-	topTransaction *Transaction
-	size           int
-}
-
-func (ts *TransactionStack) Commit() {
-	activeTransaction := ts.GetTopTransaction()
+func (gkv *gkvDB) Commit() {
+	activeTransaction := gkv.GetTopTransaction()
 
 	if activeTransaction == nil {
 		fmt.Printf(MsgWarning + "Nothing to commit")
@@ -31,7 +35,7 @@ func (ts *TransactionStack) Commit() {
 	}
 
 	for k, v := range activeTransaction.localStore {
-		if err := db.DB.Put([]byte(k), []byte(v), nil); err != nil {
+		if err := gkv.mainDB.DB.Put([]byte(k), []byte(v), nil); err != nil {
 			fmt.Printf(MsgError + err.Error() + "\n")
 		}
 
@@ -41,9 +45,9 @@ func (ts *TransactionStack) Commit() {
 	}
 }
 
-func CountRecords() {
+func (gkv *gkvDB) CountRecords() {
 	var i int64
-	iter := db.DB.NewIterator(nil, nil)
+	iter := gkv.mainDB.DB.NewIterator(nil, nil)
 	for iter.Next() {
 		i++
 	}
@@ -63,8 +67,8 @@ func CountDatabases() error {
 	return nil
 }
 
-func (ts *TransactionStack) DeleteRecord(key string) {
-	activeTransaction := ts.GetTopTransaction()
+func (gkv *gkvDB) DeleteRecord(key string) {
+	activeTransaction := gkv.GetTopTransaction()
 
 	if activeTransaction != nil {
 		if _, ok := activeTransaction.localStore[key]; ok {
@@ -73,7 +77,7 @@ func (ts *TransactionStack) DeleteRecord(key string) {
 		}
 	}
 
-	if err := db.DB.Delete([]byte(key), nil); err != nil {
+	if err := gkv.mainDB.DB.Delete([]byte(key), nil); err != nil {
 		fmt.Printf(MsgError + err.Error() + "\n")
 	}
 }
@@ -87,8 +91,8 @@ func DeleteDatabase(args []string) {
 	os.RemoveAll("./.tmp/" + args[2] + ".db")
 }
 
-func (ts *TransactionStack) Get(key string) {
-	activeTransaction := ts.GetTopTransaction()
+func (gkv *gkvDB) Get(key string) {
+	activeTransaction := gkv.GetTopTransaction()
 
 	if activeTransaction != nil {
 		if v, ok := activeTransaction.localStore[key]; ok {
@@ -97,7 +101,7 @@ func (ts *TransactionStack) Get(key string) {
 		}
 	}
 
-	value, err := db.DB.Get([]byte(key), nil)
+	value, err := gkv.mainDB.DB.Get([]byte(key), nil)
 	if err != nil {
 		fmt.Printf(MsgError+"%s not found\n", key)
 		return
@@ -106,8 +110,8 @@ func (ts *TransactionStack) Get(key string) {
 	fmt.Printf("%s\n", string(value))
 }
 
-func (ts *TransactionStack) GetTopTransaction() *Transaction {
-	return ts.topTransaction
+func (gkv *gkvDB) GetTopTransaction() *Transaction {
+	return gkv.topTransaction
 }
 
 func ListDatabases() error {
@@ -126,8 +130,8 @@ func ListDatabases() error {
 	return nil
 }
 
-func ListRecords() {
-	iter := db.DB.NewIterator(nil, nil)
+func (gkv *gkvDB) ListRecords() {
+	iter := gkv.mainDB.DB.NewIterator(nil, nil)
 	for iter.Next() {
 		k := iter.Key()
 		v := iter.Value()
@@ -141,15 +145,15 @@ func ListRecords() {
 	}
 }
 
-func (ts *TransactionStack) ListTransaction() {
-	if ts.topTransaction == nil {
+func (gkv *gkvDB) ListTransaction() {
+	if gkv.topTransaction == nil {
 		fmt.Printf("No changes in transaction\n")
 		return
 	}
 
 	transactionStackChanges := []map[string]string{}
 
-	currentTransaction := ts.topTransaction
+	currentTransaction := gkv.topTransaction
 
 	for {
 		transactionStackChanges = append(transactionStackChanges, currentTransaction.localStore)
@@ -169,50 +173,63 @@ func (ts *TransactionStack) ListTransaction() {
 	}
 }
 
-func NewTransactionStack() *TransactionStack {
-	return &TransactionStack{}
+func NewGkv(mainDB *db.LevelDB, helperDB *db.LevelDB) *gkvDB {
+	return &gkvDB{
+		mainDB:   mainDB,
+		helperDB: helperDB,
+	}
 }
 
-func (ts *TransactionStack) Push() {
+func (gkv *gkvDB) Push() {
 	newTransaction := &Transaction{
 		localStore: make(map[string]string),
 	}
 
-	newTransaction.next = ts.topTransaction
-	ts.topTransaction = newTransaction
-	ts.size++
+	newTransaction.next = gkv.topTransaction
+	gkv.topTransaction = newTransaction
+	gkv.size++
 }
 
-func (ts *TransactionStack) Pop() {
-	if ts.topTransaction == nil {
+func (gkv *gkvDB) Pop() {
+	if gkv.topTransaction == nil {
 		fmt.Printf(MsgError + "No Active Transactions\n")
 		return
 	}
 
-	ts.topTransaction = ts.topTransaction.next
-	ts.size--
+	gkv.topTransaction = gkv.topTransaction.next
+	gkv.size--
 }
 
-func (ts *TransactionStack) Rollback() {
-	if ts.topTransaction == nil {
+func (gkv *gkvDB) Rollback() {
+	if gkv.topTransaction == nil {
 		fmt.Printf(MsgError + "No Active Transactions\n")
 		return
 	}
 
-	for k := range ts.topTransaction.localStore {
-		delete(ts.topTransaction.localStore, k)
+	for k := range gkv.topTransaction.localStore {
+		delete(gkv.topTransaction.localStore, k)
 	}
 }
 
-func (ts *TransactionStack) Set(key string, value string) {
-	activeTransaction := ts.GetTopTransaction()
+func (gkv *gkvDB) Set(key string, value string) {
+	activeTransaction := gkv.GetTopTransaction()
 
 	if activeTransaction != nil {
 		activeTransaction.localStore[key] = value
 		return
 	}
 
-	if err := db.DB.Put([]byte(key), []byte(value), nil); err != nil {
+	if err := gkv.mainDB.DB.Put([]byte(key), []byte(value), nil); err != nil {
+		fmt.Printf(MsgError + err.Error() + "\n")
+	}
+}
+
+func (gkv *gkvDB) SetExpire(key string, value string) {
+	if err := gkv.helperDB.DB.Put(
+		[]byte(gkv.mainDB.Name+"."+key),
+		[]byte(value),
+		nil,
+	); err != nil {
 		fmt.Printf(MsgError + err.Error() + "\n")
 	}
 }

@@ -19,6 +19,7 @@ var (
 		{Text: "DELETE", Description: "Deletes a value based on a key"},
 		{Text: "END", Description: "Ends a transaction"},
 		{Text: "EXIT", Description: "Exits the console"},
+		{Text: "EXPIRE", Description: "Sets an expiry time on a key"},
 		{Text: "GET", Description: "Gets a value based on a key"},
 		{Text: "LIST", Description: "Lists all databases/Lists all key/values stored"},
 		{Text: "ROLLBACK", Description: "Rolls back a transaction"},

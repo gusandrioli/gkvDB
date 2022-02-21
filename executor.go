@@ -15,29 +15,31 @@ func executor(in string) {
 
 	switch args[0] {
 	case "BEGIN":
-		Begin(transactionStack, args)
+		Begin(gkv, args)
 	case "COMMIT":
-		Commit(transactionStack, args)
+		Commit(gkv, args)
 	case "COUNT":
-		Count(args)
+		Count(gkv, args)
 	case "DELETE":
-		Delete(transactionStack, args)
+		Delete(gkv, args)
 	case "END":
-		End(transactionStack, args)
+		End(gkv, args)
 	case "EXIT":
 		os.Exit(0)
+	case "EXPIRE":
+		Expire(gkv, args)
 	case "GET":
-		Get(transactionStack, args)
+		Get(gkv, args)
 	case "LIST":
-		List(transactionStack, args)
+		List(gkv, args)
 	case "NEW":
-		NewDB(args)
+		NewDB(gkv, args)
 	case "ROLLBACK":
-		Rollback(transactionStack, args)
+		Rollback(gkv, args)
 	case "SET":
-		Set(transactionStack, args)
+		Set(gkv, args)
 	case "USE":
-		UseDB(args)
+		UseDB(gkv, args)
 	default:
 		fmt.Printf("ERROR: Unrecognised Command: %s\n", args[0])
 	}

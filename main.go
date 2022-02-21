@@ -1,11 +1,14 @@
 package main
 
+import "github.com/gusandrioli/gkvDB/db"
+
 func main() {
-	db = newDBConnection("")
-	defer db.DB.Close()
+	mainDB := db.NewDBConnection("")
+	defer mainDB.DB.Close()
+	helperDB := db.NewDBConnection("local_expiry")
+	defer helperDB.DB.Close()
 
-	transactionStack = NewTransactionStack()
-
+	gkv = NewGkv(mainDB, helperDB)
 	p := newPrompt()
 	p.Run()
 }

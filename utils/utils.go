@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"math/rand"
@@ -8,7 +8,7 @@ import (
 var chars = []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 
 // newSequence generates random string of 256 bytes
-func newSequence() string {
+func NewSequence() string {
 	rand.Seed(time.Now().UnixNano())
 
 	bs := make([]byte, 127)
@@ -20,7 +20,7 @@ func newSequence() string {
 }
 
 // newSequenceWithLength generates random string of N bytes
-func newSequenceWithLength(n int) string {
+func NewSequenceWithLength(n int) string {
 	rand.Seed(time.Now().UnixNano())
 
 	bs := make([]byte, n)
